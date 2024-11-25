@@ -13,22 +13,44 @@ const socket = new Server(server, {
     }
 });
 
-let scoreBoard = []
+let fakeData = []
+
+// Utility function to find data index by ID
+const findDataIndex = (id) => {
+    return fakeData.findIndex(item => item.id === id);
+};
 
 socket.on("connection", (socket) => {
     console.log("Connected", 'ID: ', socket.id)
 
-    socket.on("score", (score) => {
-        scoreBoard.push({ id: socket.id, ...score })
-        console.log(scoreBoard)
+    // Emit the current data to the newly connected client
+    socket.emit("listData", fakeData);
 
-        socket.emit("scoreBoard", scoreBoard)
+    socket.on("getData", () => {
+        socket.emit("returnData", fakeData)
+    })
+
+    socket.on("data", (data) => {
+        fakeData.push(data)
+        console.table(fakeData);
+
+        socket.emit("listData", fakeData)
 
         setInterval(() => {
-            // Send to the client the scoreboard every 5s
-            // So that it will update the scoreboard continuously
-            socket.emit("scoreBoard", scoreBoard)
-        }, 5000);
+            socket.emit("listData", fakeData)
+        }, 3000)
+    })
+
+    socket.on("updateData", (data) => {
+        const index = findDataIndex(data.id)
+
+        if (index !== -1) {
+            fakeData[index] = {
+                ...fakeData[index],
+                ...data.updateData
+            }
+            console.table("Updated record:", fakeData[index]);
+        }
     })
 })
 
